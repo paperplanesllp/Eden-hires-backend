@@ -1,0 +1,2 @@
+Set-Content .gitignore "node_modules"
+Add-Content .gitignore ".env"
