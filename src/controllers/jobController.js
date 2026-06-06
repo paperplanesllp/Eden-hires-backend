@@ -2,10 +2,18 @@ const Job = require("../models/Job");
 const { v2: cloudinary } = require("cloudinary");
 const sendEmail = require("../utils/sendEmail");
 
+const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || "").trim();
+const cloudKey = (process.env.CLOUDINARY_API_KEY || "").trim();
+const cloudSecret = (process.env.CLOUDINARY_API_SECRET || "").trim();
+
+if (!cloudName || !cloudKey || !cloudSecret) {
+  console.warn("Cloudinary env vars missing or empty; resume uploads may fail.");
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: cloudName,
+  api_key: cloudKey,
+  api_secret: cloudSecret,
 });
 
 const uploadResume = (fileBuffer) =>
@@ -95,6 +103,7 @@ const createJob = async (req, res) => {
       data: job,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       success: false,
       message: error.message,
