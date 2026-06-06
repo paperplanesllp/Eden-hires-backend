@@ -59,7 +59,6 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Edenhire.ai API Running");
 });
-
 app.use("/api/contact", contactRoutes);
 app.use("/api/job", jobRoutes);
 
