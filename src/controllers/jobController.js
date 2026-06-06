@@ -1,6 +1,6 @@
 const Job = require("../models/Job");
 const { v2: cloudinary } = require("cloudinary");
-const sendEmail = require("../utils/sendEmail");
+const { sendEmail } = require("../utils/sendEmail");
 
 const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || "").trim();
 const cloudKey = (process.env.CLOUDINARY_API_KEY || "").trim();
@@ -53,7 +53,9 @@ Resume URL: ${candidate.resumeUrl}
 `;
 
 const createJob = async (req, res) => {
+  console.log("[START] createJob - Request received");
   try {
+    console.log("[STEP] Validating request body");
     const {
       name,
       email,
@@ -67,16 +69,27 @@ const createJob = async (req, res) => {
       roleLookingFor,
     } = req.body;
 
+    console.log("[MULTER] Checking uploaded file");
     if (!req.file) {
+      console.log("[MULTER] No file received in request");
       return res.status(400).json({
         success: false,
         message: "Resume file is required.",
       });
     }
 
+    console.log("[MULTER] File received", {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+    });
+
+    console.log("[CLOUDINARY] Uploading resume to Cloudinary");
     const uploadedResume = await uploadResume(req.file.buffer);
     const resumeUrl = uploadedResume.secure_url;
+    console.log("[CLOUDINARY] Upload successful", { resumeUrl });
 
+    console.log("[DB] Saving job application to MongoDB");
     const job = await Job.create({
       name,
       email,
@@ -90,21 +103,27 @@ const createJob = async (req, res) => {
       roleLookingFor,
       resumeUrl,
     });
+    console.log("[DB] Job saved successfully", { id: job._id });
 
+    console.log("[EMAIL] Attempting to send email to hr@edenhire.ai");
     await sendEmail({
       to: "hr@edenhire.ai",
       subject: "New Candidate Application",
       replyTo: email,
       text: buildCandidateEmail(job),
     });
+    console.log("[EMAIL] Email sent successfully to hr@edenhire.ai");
 
+    console.log("[STEP] Response returning");
     res.status(201).json({
       success: true,
       data: job,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    console.error("[ERROR]", error);
+    console.error("[ERROR MESSAGE]", error.message);
+    console.error("[STACK]", error.stack);
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

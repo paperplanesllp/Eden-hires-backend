@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 
 const contactRoutes = require("./routes/contactRoutes");
 const jobRoutes = require("./routes/jobRoutes");
+const { verifyTransporter } = require("./utils/sendEmail");
 
 dotenv.config();
 
@@ -54,4 +55,8 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Verify SMTP transporter at startup to surface email auth issues early
+  verifyTransporter()
+    .then(() => console.log("SMTP verification succeeded"))
+    .catch((err) => console.error("SMTP verification failed:", err));
 });
