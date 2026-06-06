@@ -4,9 +4,9 @@ const emailUser = (process.env.EMAIL_USER || "").trim();
 const emailPass = (process.env.EMAIL_PASS || "").trim();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.office365.com",
-  port: 587,
-  secure: false,
+  host: "smtp.hostinger.com",
+  port: 465,
+  secure: true,
   auth: {
     user: emailUser,
     pass: emailPass,
