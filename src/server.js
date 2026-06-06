@@ -17,6 +17,7 @@ connectDB();
 const defaultAllowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
+  "https://eden-hires.vercel.app",
   "https://edenhire.ai",
   "https://www.edenhire.ai",
 ];
@@ -30,18 +31,29 @@ const envAllowedOrigins = [
 
 const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
 
-      callback(new Error("Not allowed by CORS"));
-    },
-  })
-);
+    callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+console.log("Allowed CORS origins:", allowedOrigins);
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} Origin: ${req.headers.origin}`);
+  next();
+});
 app.use(express.json());
 
 app.get("/", (req, res) => {
