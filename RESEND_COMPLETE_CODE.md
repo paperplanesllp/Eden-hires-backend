@@ -1,3 +1,8 @@
+# Complete Updated sendEmail.js - Resend Version
+
+**File Location**: `/src/utils/sendEmail.js`
+
+```javascript
 const { Resend } = require("resend");
 
 // Configuration from environment variables
@@ -176,3 +181,58 @@ module.exports = {
   formatEmailBody,
   createEmailTemplate,
 };
+```
+
+---
+
+## Key Differences from Nodemailer Version
+
+| Aspect | Nodemailer | Resend |
+|--------|-----------|--------|
+| **Import** | `const nodemailer = require("nodemailer");` | `const { Resend } = require("resend");` |
+| **API Key** | `EMAIL_USER`, `EMAIL_PASS`, SMTP host/port | Single `RESEND_API_KEY` |
+| **Initialization** | `nodemailer.createTransport()` | `new Resend(apiKey)` |
+| **Send Method** | `transporter.sendMail()` | `resend.emails.send()` |
+| **Response** | `{ messageId, response }` | `{ data: { id }, error }` |
+| **From Address** | Variable + hardcoded | Constant (`noreply@edenhire.ai`) |
+| **Verification** | SMTP connection test | API key presence check |
+
+---
+
+## Environment Variable Change
+
+### Before (Nodemailer - Removed)
+```env
+EMAIL_USER=hr@edenhire.ai
+EMAIL_PASS=HREdenhire@2026#
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_SECURE=true
+```
+
+### After (Resend - Required)
+```env
+RESEND_API_KEY=re_your_actual_api_key_here
+```
+
+---
+
+## No Controller Changes Needed
+
+The following files work **exactly as before** with no modifications:
+- `/src/controllers/contactController.js`
+- `/src/controllers/jobController.js`
+- `/src/routes/contactRoutes.js`
+- `/src/routes/jobRoutes.js`
+
+This is because all exported functions maintain the same interface.
+
+---
+
+## Installation
+
+```bash
+npm install resend
+```
+
+Then add `RESEND_API_KEY` to your `.env` file and restart the server.
