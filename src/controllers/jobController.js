@@ -31,7 +31,8 @@ const uploadResume = (fileBuffer) =>
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: "edenhire/resumes",
-        resource_type: "auto",
+        resource_type: "raw",
+        type: "upload",
       },
       (error, result) => {
         if (error) {
