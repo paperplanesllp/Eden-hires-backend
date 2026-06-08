@@ -29,7 +29,9 @@ const envAllowedOrigins = [
   .map((origin) => origin && origin.trim())
   .filter(Boolean);
 
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+const allowedOrigins = [
+  ...new Set([...defaultAllowedOrigins, ...envAllowedOrigins]),
+];
 
 const corsOptions = {
   origin(origin, callback) {
@@ -50,24 +52,34 @@ console.log("Allowed CORS origins:", allowedOrigins);
 
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
+
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url} Origin: ${req.headers.origin}`);
   next();
 });
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Edenhire.ai API Running");
 });
+
 app.use("/api/contact", contactRoutes);
 app.use("/api/job", jobRoutes);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
-  // Verify SMTP transporter at startup to surface email auth issues early
-  verifyTransporter()
-    .then(() => console.log("SMTP verification succeeded"))
-    .catch((err) => console.error("SMTP verification failed:", err));
+
+  try {
+    await verifyTransporter();
+    console.log("✅ SMTP verification succeeded");
+  } catch (err) {
+    console.error("❌ SMTP verification failed", {
+      message: err.message,
+      code: err.code,
+      command: err.command,
+    });
+  }
 });
