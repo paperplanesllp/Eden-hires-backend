@@ -19,6 +19,7 @@ cloudinary.config({
   cloud_name: cloudName,
   api_key: cloudKey,
   api_secret: cloudSecret,
+  secure: true,
 });
 
 /**
@@ -26,25 +27,64 @@ cloudinary.config({
  * @param {Buffer} fileBuffer - Resume file buffer
  * @returns {Promise<Object>} Cloudinary response with secure_url
  */
-const uploadResume = (fileBuffer) =>
+/**
+ * Upload resume to Cloudinary (raw resource)
+ * - Uses `resource_type: 'raw'` and `type: 'upload'` for PDFs
+ * - Sets `access_control` to anonymous so the CDN serves the file publicly
+ * - Uses `use_filename` to preserve filename and `unique_filename` to avoid collisions
+ * - Accepts a Buffer (from multer memory storage) and optional original filename
+ * @param {Buffer} fileBuffer
+ * @param {string} [originalName]
+ * @returns {Promise<Object>} Cloudinary upload result (includes `secure_url`)
+ */
+const uploadResume = (fileBuffer, originalName = "resume") =>
   new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "edenhire/resumes",
-        resource_type: "raw",
-        type: "upload",
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-          return;
-        }
+    if (!fileBuffer || !Buffer.isBuffer(fileBuffer)) {
+      const err = new Error("Invalid file buffer provided to uploadResume");
+      console.error("[CLOUDINARY][UPLOAD][ERROR]", { message: err.message });
+      return reject(err);
+    }
 
-        resolve(result);
+    const options = {
+      folder: "edenhire/resumes",
+      resource_type: "raw",
+      type: "upload",
+      use_filename: true,
+      unique_filename: true,
+      overwrite: false,
+      context: `original_filename=${originalName}`,
+      access_control: [{ access_type: "anonymous" }],
+    };
+
+    console.log("[CLOUDINARY][UPLOAD] Starting upload", { folder: options.folder, resource_type: options.resource_type });
+
+    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) {
+        console.error("[CLOUDINARY][UPLOAD][ERROR]", { message: error.message, stack: error.stack });
+        return reject(error);
       }
-    );
 
-    uploadStream.end(fileBuffer);
+      if (!result || !result.secure_url) {
+        const err = new Error("Cloudinary upload succeeded but no secure_url was returned");
+        console.error("[CLOUDINARY][UPLOAD][NO_URL]", { result });
+        return reject(err);
+      }
+
+      console.log("[CLOUDINARY][UPLOAD][SUCCESS]", { public_id: result.public_id, secure_url: result.secure_url });
+      return resolve(result);
+    });
+
+    uploadStream.on("error", (streamErr) => {
+      console.error("[CLOUDINARY][STREAM][ERROR]", { message: streamErr.message, stack: streamErr.stack });
+      return reject(streamErr);
+    });
+
+    try {
+      uploadStream.end(fileBuffer);
+    } catch (endErr) {
+      console.error("[CLOUDINARY][UPLOAD][END_ERROR]", { message: endErr.message, stack: endErr.stack });
+      return reject(endErr);
+    }
   });
 
 /**
