@@ -3,7 +3,7 @@ const { Resend } = require("resend");
 // Configuration from environment variables
 const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
 
-const FROM_EMAIL = "noreply@edenhire.ai";
+const FROM_EMAIL = "hr@edenhire.ai";;
 const FROM_NAME = "Eden Hire";
 
 // Validate Resend configuration
