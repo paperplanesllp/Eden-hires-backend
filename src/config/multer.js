@@ -1,67 +1,44 @@
 const multer = require("multer");
 
 /**
- * Multer Configuration Module
+ * Multer Configuration for Resume Uploads
  * 
- * Purpose:
- * - Configure file upload handling before Cloudinary processing
- * - Use memory storage (files are buffered in RAM, not written to disk)
- * - Validate file size and type before upload
- * 
- * Design Rationale:
- * - memoryStorage(): Files stay in memory; no disk I/O overhead
- *   This works well with Cloudinary upload_stream which accepts buffers
- * - fileSize limit: 5MB is standard for resume uploads (PDFs are typically <1MB)
- * - Mime type validation: Only accept PDF MIME types to reject invalid files early
+ * Configuration:
+ * - Storage: Memory (no disk writes, files buffered in RAM)
+ * - File Type: PDF only (application/pdf MIME type)
+ * - Max Size: 5MB (standard for resume files)
+ * - Field Name: "resume" (expected in multipart/form-data)
  */
 
-// Configure multer for file uploads
-const upload = multer({
-  // Use memory storage: keeps file in RAM as a Buffer
-  // This Buffer is then passed to Cloudinary's upload_stream
-  storage: multer.memoryStorage(),
-
-  // File size limits
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB max file size
-  },
-
-  // Optionally validate file type (MIME type)
-  // Resume files should be PDF only
-  fileFilter: (req, file, callback) => {
-    console.log("[MULTER][FILE_FILTER]", {
-      originalname: file.originalname,
+// Accept PDF files only
+const fileFilter = (req, file, callback) => {
+  if (file.mimetype === "application/pdf") {
+    console.log("[MULTER][FILE][ACCEPTED]", {
+      filename: file.originalname,
+      size: file.size,
       mimetype: file.mimetype,
     });
-
-    // Accept PDF files only
-    const validMimeTypes = ["application/pdf"];
-    if (!validMimeTypes.includes(file.mimetype)) {
-      const error = new Error(
-        `Invalid file type: ${file.mimetype}. Only PDF files are accepted.`
-      );
-      console.warn("[MULTER][FILE_FILTER][REJECTED]", {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        reason: "Not a PDF",
-      });
-      return callback(error);
-    }
-
-    // File is valid, proceed
-    console.log("[MULTER][FILE_FILTER][ACCEPTED]", {
-      originalname: file.originalname,
-      size: file.size,
-    });
     callback(null, true);
+  } else {
+    const error = new Error(
+      `Invalid file type: ${file.mimetype}. Only PDF files are accepted.`
+    );
+    console.warn("[MULTER][FILE][REJECTED]", {
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      reason: "Not a PDF",
+    });
+    callback(error);
+  }
+};
+
+// Configure multer
+const upload = multer({
+  storage: multer.memoryStorage(), // Buffer in RAM, not disk
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
   },
+  fileFilter, // Validate file type
 });
 
-/**
- * Export multer middleware for single file upload
- * Usage in routes: router.post("/", upload.single("resume"), controller)
- * 
- * - single("resume"): Expects one file with form field name "resume"
- * - After this middleware, req.file will contain: { buffer, originalname, mimetype, size }
- */
 module.exports = upload;

@@ -56,6 +56,12 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    resumePublicId: {
+      type: String,
+      required: false,
+      description: "Cloudinary public_id for resume file (enables deletion/updates)",
+    },
   },
   {
     timestamps: true,
